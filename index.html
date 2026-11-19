@@ -178,6 +178,7 @@ body.dvm #aside2{display:none}
    <div class="chips" id="fm"></div><div class="row" id="fcr" style="display:none"><label class="mu">Kategorie für Importe<select id="fcat"></select></label></div>
    <div id="fl"></div>
    <div id="fdb" style="display:none;margin-top:12px"><h2 style="margin:0 0 6px;font-size:15px">🔗 Kalender abonnieren</h2><div class="mu" style="margin-bottom:6px">Link zu einem iCal-Kalender (z. B. CIS-Stundenplan). Termine werden automatisch aktualisiert, für die oben gewählte Person und Kategorie.</div><div class="row"><input id="fdn" placeholder="Name (z. B. CIS Stundenplan)"></div><div class="row"><input id="fdu" placeholder="https://… oder webcal://…" autocomplete="off"></div><button class="p" id="fda" style="width:100%">Abonnieren</button></div>
+   <div id="dgb2" style="display:none;margin-top:12px"><button id="dgb" style="width:100%">🔧 Verbindung prüfen</button><pre id="dgo" class="mu" style="white-space:pre-wrap;user-select:text;font-size:12px;margin:8px 0 0"></pre></div>
    <input type="file" id="fi" accept=".xlsx,.xls,.csv,.ics" multiple style="width:100%;margin-top:8px">
    <button id="scb" style="width:100%;margin-top:8px;display:none">📷 Termine aus Screenshot lesen</button><input type="file" id="sc" accept="image/*" multiple hidden><textarea id="ptx" rows="3" placeholder="Text einer E-Mail, SMS oder Buchungsbestätigung einfügen (Flug, Arzt, …)" style="display:none;width:100%;margin-top:8px"></textarea><button id="ptb" style="width:100%;margin-top:6px;display:none">✍ Termine aus Text lesen</button><div id="sp"></div>
    <div class="row" style="margin-top:8px"><button id="bx">⬇ Sicherung speichern</button><button id="bi">⬆ Sicherung laden</button></div><input type="file" id="bf" accept=".json" hidden>
@@ -439,7 +440,7 @@ function dvRender(){
  const first=new Date(d0.getFullYear(),d0.getMonth(),1),last=new Date(d0.getFullYear(),d0.getMonth()+1,0);
  let start=dk(dn(iso(first))-((first.getDay()+6)%7)),end=dk(dn(iso(last))+((7-last.getDay())%7));
  let cells="";
- for(let n=dn(start);n<=dn(end);n++){const k=dk(n),dd=ld(k),cl=[];evs(k).forEach(e=>{const c=col(e);if(!cl.includes(c))cl.push(c)});
+ for(let n=dn(start);n<=dn(end);n++){const k=dk(n),dd=ld(k),cl=hol(k)?["var(--red)"]:[];evs(k).forEach(e=>{const c=col(e);if(!cl.includes(c))cl.push(c)});
   cells+=`<button type="button" class="dvd${k===sel?" s":""}${dd.getMonth()!==d0.getMonth()?" o":""}${k===iso(now)?" t":""}${hol(k)?" hd":""}" data-d="${k}">${dd.getDate()===1?`<span class="ml">${MS[dd.getMonth()]}</span>`:""}<b>${dd.getDate()}</b><span class="dvt">${cl.slice(0,3).map(c=>`<i style="background:${c}"></i>`).join("")}</span></button>`}
  if(agFix&&!(sel>=agFix&&dn(sel)<dn(agFix)+agN))agFix=null;
  const A=agFix||sel;let ag="";
@@ -508,7 +509,7 @@ function deskLayout(){const side=$("side"),calc=$("calc"),lg=document.querySelec
  else if($("chips").parentNode===side){const g=$("grid");calc.insertBefore($("chips"),g);calc.insertBefore(lg,g)}}
 function miniRender(){const d0=ld(sel),first=new Date(d0.getFullYear(),d0.getMonth(),1),last=new Date(d0.getFullYear(),d0.getMonth()+1,0);
  const start=dk(dn(iso(first))-((first.getDay()+6)%7)),end=dk(dn(iso(last))+((7-last.getDay())%7));let cells="";
- for(let n=dn(start);n<=dn(end);n++){const k=dk(n),dd=ld(k),cl=[];evs(k).forEach(e=>{const c=col(e);if(!cl.includes(c))cl.push(c)});
+ for(let n=dn(start);n<=dn(end);n++){const k=dk(n),dd=ld(k),cl=hol(k)?["var(--red)"]:[];evs(k).forEach(e=>{const c=col(e);if(!cl.includes(c))cl.push(c)});
   cells+=`<button type="button" class="dvd${k===sel?" s":""}${dd.getMonth()!==d0.getMonth()?" o":""}${k===iso(now)?" t":""}${hol(k)?" hd":""}" data-d="${k}"><b>${dd.getDate()}</b><span class="dvt">${cl.slice(0,3).map(c=>`<i style="background:${c}"></i>`).join("")}</span></button>`}
  const m2=$("mini2");m2.innerHTML=`<div class="head" style="margin-bottom:4px"><b>${MN[d0.getMonth()]} ${d0.getFullYear()}</b><span><button type="button" id="m2p" title="Vorheriger Monat">‹</button> <button type="button" id="m2n" title="Nächster Monat">›</button></span></div><div class="dvw">${["M","D","M","D","F","S","S"].map(x=>`<span>${x}</span>`).join("")}</div><div class="dvg">${cells}</div>`;
  m2.querySelectorAll(".dvd").forEach(b=>b.onclick=()=>{agFix=null;sel=b.dataset.d;y=+sel.slice(0,4);m=+sel.slice(5,7)-1;render()});
@@ -778,12 +779,28 @@ function push(c){const cur={},curP={},r=rem[c],up=[],del=[],pk=new Set();
  for(const k in cur)if(!pk.has(k)&&r[k]!==cur[k]){r[k]=cur[k];up.push({id:k,j:JSON.parse(cur[k])})}
  for(const k in r)if(!(k in cur)){delete r[k];del.push(k)}
  if(up.length)sb.from(c).upsert(up).then(chk);if(del.length)sb.from(c).delete().in("id",del).then(chk)}
-function sync(){push("ev");push("files");push("settings")}
-async function load(c){const {data,error}=await sb.from(c).select("id,j");if(error){chk({error});return}
- const m={};S[c]=data.map(d=>{m[d.id]=ser(c,d.j);return d.j});rem[c]=m;
- if(c==="ev"){const q=await sb.from("ev_private").select("id,j"),pm={},rp={};(q.data||[]).forEach(d=>{pm[d.id]=d.j;rp[d.id]=ser("ev",d.j)});rem.evp=rp;
-  S.ev=S.ev.map(e=>e.priv&&pm[did(e.id)]?pm[did(e.id)]:e)}
+function sync(){LASTSAVE=Date.now();push("ev");push("files");push("settings")}
+let RT="",EM="",LASTOK=null,FAIL="",QUIET=false,LASTSAVE=0;const LASTSIG={},BUILD="2026-11-16";
+function updStat(){$("stt").textContent=" · ☁ "+(EM||"geteilt")+(LASTOK?" · aktualisiert "+pad(LASTOK.getHours())+":"+pad(LASTOK.getMinutes()):"")+(FAIL?" · ⚠ "+FAIL:"")+((RT&&RT!=="SUBSCRIBED")?" · Echtzeit: "+RT:"")}
+async function load(c,soft){const {data,error}=await sb.from(c).select("id,j");if(error){if(QUIET){FAIL="Laden: "+error.message}else chk({error});updStat();return}
+ const m={},arr=data.map(d=>{m[d.id]=ser(c,d.j);return d.j}),pm={};let rp=null;
+ if(c==="ev"){const q=await sb.from("ev_private").select("id,j");rp={};(q.data||[]).forEach(d=>{pm[d.id]=d.j;rp[d.id]=ser("ev",d.j)})}
+ const sig=JSON.stringify([m,rp]);FAIL="";LASTOK=new Date();updStat();
+ if(soft&&LASTSIG[c]===sig)return;LASTSIG[c]=sig;
+ S[c]=arr;rem[c]=m;if(c==="ev"){rem.evp=rp;S.ev=S.ev.map(e=>e.priv&&pm[did(e.id)]?pm[did(e.id)]:e)}
  render()}
+async function refresh(){if(!DB||Date.now()-LASTSAVE<4000||document.querySelector(".md.on,.tgl,.ghost"))return;QUIET=true;
+ try{await load("ev",true);await load("files",true);await load("settings",true)}catch(e){FAIL=String(e.message||e);updStat()}QUIET=false}
+setInterval(()=>{if(document.visibilityState==="visible")refresh()},20000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});window.addEventListener("focus",refresh);
+async function diag(){const o=[],L=(k,v)=>o.push(k+": "+v);
+ try{const r=await sb.auth.getSession(),u=r.data&&r.data.session&&r.data.session.user;L("Angemeldet als",u?u.email:"keine Sitzung")}catch(e){L("Sitzung","Fehler "+e.message)}
+ try{const q=await sb.from("allowed_users").select("person");L("Freigeschaltet (Tabelle allowed_users)",q.error?"FEHLER "+q.error.message:(q.data&&q.data.length?"ja, Person "+q.data[0].person:"NEIN – diese E-Mail fehlt in allowed_users"))}catch(e){L("allowed_users","Fehler "+e.message)}
+ for(const c of ["ev","files","settings","ev_private"]){try{const q=await sb.from(c).select("id",{count:"exact",head:true});L("Tabelle "+c,q.error?"FEHLER "+q.error.message:(q.count==null?"ok":q.count+" Einträge sichtbar"))}catch(e){L("Tabelle "+c,"Fehler "+e.message)}}
+ try{const id="_diag_"+Date.now(),w=await sb.from("settings").upsert({id,j:{t:1}});if(w.error)L("Schreibtest",w.error.message);else{await sb.from("settings").delete().eq("id",id);L("Schreibtest","ok")}}catch(e){L("Schreibtest","Fehler "+e.message)}
+ L("Echtzeit",RT||"unbekannt");L("Im Kalender geladen",S.ev.length+" Termine");L("Letzte Aktualisierung",LASTOK?LASTOK.toLocaleTimeString("de-AT"):"noch keine");L("Version",BUILD);
+ $("dgo").textContent=o.join("\n")}
+$("dgb").onclick=()=>{$("dgo").textContent="Prüfe …";diag()};
 async function feedRun(id){const b=document.querySelector('#fl .rf[data-id="'+id+'"]');if(b)b.textContent="…";
  try{const {data,error}=await sb.functions.invoke("cis-sync",{body:{id}});if(error)throw error;if(data&&data.error)throw new Error(data.error)}catch(e){alert("Aktualisierung fehlgeschlagen: "+(e.message||e))}
  await load("ev");await load("files")}
@@ -798,8 +815,8 @@ $("fda").onclick=async()=>{if(!sb)return;const url=$("fdu").value.trim().replace
 async function start(user){$("fdb").style.display="block";UID=user.id;prUp(null);{let i=-1;try{const q=await sb.from("allowed_users").select("person").limit(1);if(q.data&&q.data[0]&&q.data[0].person!=null)i=+q.data[0].person}catch(e){}
 if(i<0)i=MEMBER_EMAILS.findIndex(x=>x&&x.toLowerCase()===(user.email||"").toLowerCase());
 ME=i>=0?String(i):"";if(ME!==""){fm=+ME;esel.clear();esel.add(+ME)}}DB=sb;await load("ev");await load("files");await load("settings");
- sb.channel("fam").on("postgres_changes",{event:"*",schema:"public",table:"ev"},()=>load("ev")).on("postgres_changes",{event:"*",schema:"public",table:"files"},()=>load("files")).on("postgres_changes",{event:"*",schema:"public",table:"settings"},()=>load("settings")).on("postgres_changes",{event:"*",schema:"public",table:"ev_private"},()=>load("ev")).subscribe();
- $("stt").textContent=" \u00b7 \u2601 "+(user.email||"geteilt");$("lo").style.display="inline-block"}
+ sb.channel("fam").on("postgres_changes",{event:"*",schema:"public",table:"ev"},()=>load("ev")).on("postgres_changes",{event:"*",schema:"public",table:"files"},()=>load("files")).on("postgres_changes",{event:"*",schema:"public",table:"settings"},()=>load("settings")).on("postgres_changes",{event:"*",schema:"public",table:"ev_private"},()=>load("ev")).subscribe(st=>{RT=st;updStat()});
+ EM=user.email||"";updStat();$("dgb2").style.display="block";$("lo").style.display="inline-block"}
 async function boot(){const lg=$("login");
  if(!sb){lg.style.display="flex";$("lge").textContent="Supabase ist noch nicht eingerichtet (siehe README).";return}
  const {data}=await sb.auth.getSession();
